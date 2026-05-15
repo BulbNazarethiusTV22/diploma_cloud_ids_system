@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Login | Secure Cloud Storage</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0f172a;
+        }
+
+        .card {
+            width: 380px;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #1e293b;
+        }
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            font-size: 15px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: #2563eb;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        button.secondary {
+            background: #475569;
+        }
+
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 10px;
+            display: none;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .hint {
+            color: #64748b;
+            font-size: 13px;
+            margin-bottom: 18px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="card">
+    <h1>Secure Cloud Storage</h1>
+    <div class="hint">
+        Увійдіть або створіть новий користувацький акаунт.
+    </div>
+
+    <input id="username" type="text" placeholder="Username">
+    <input id="password" type="password" placeholder="Password">
+
+    <button id="login-btn" onclick="login()">Login</button>
+    <button id="register-btn" class="secondary" onclick="register()">Register</button>
+
+    <div id="status" class="status"></div>
+</div>
+
+<script>
+    function showStatus(message, isError = false) {
+        const el = document.getElementById("status");
+
+        el.style.display = "block";
+        el.style.background = isError ? "#fee2e2" : "#dcfce7";
+        el.style.color = isError ? "#991b1b" : "#166534";
+        el.innerText = message;
+    }
+
+    function getFormData() {
+        const formData = new FormData();
+
+        formData.append("username", document.getElementById("username").value.trim());
+        formData.append("password", document.getElementById("password").value.trim());
+
+        return formData;
+    }
+
+    async function readResponseData(response) {
+        try {
+            return await response.json();
+        } catch (error) {
+            return {};
+        }
+    }
+
+    function setButtonsDisabled(disabled) {
+        document.getElementById("login-btn").disabled = disabled;
+        document.getElementById("register-btn").disabled = disabled;
+    }
+
+    async function login() {
+        setButtonsDisabled(true);
+
+        try {
+            const response = await fetch("/login", {
+                method: "POST",
+                body: getFormData()
+            });
+
+            const data = await readResponseData(response);
+
+            if (response.ok) {
+                showStatus("Вхід виконано успішно.");
+
+                setTimeout(() => {
+                    window.location.href = "/";
+                }, 500);
+
+                return;
+            }
+
+            if (response.status === 403) {
+                showStatus(
+                    data.detail || "Доступ заблоковано. Зверніться до адміністратора системи.",
+                    true
+                );
+            } else {
+                showStatus(data.detail || "Помилка входу.", true);
+            }
+
+        } catch (error) {
+            showStatus("Помилка з'єднання із сервером.", true);
+
+        } finally {
+            setButtonsDisabled(false);
+        }
+    }
+
+    async function register() {
+        setButtonsDisabled(true);
+
+        try {
+            const response = await fetch("/register", {
+                method: "POST",
+                body: getFormData()
+            });
+
+            const data = await readResponseData(response);
+
+            if (response.ok) {
+                showStatus("Користувача створено. Тепер можна увійти.");
+            } else {
+                showStatus(data.detail || "Помилка реєстрації.", true);
+            }
+
+        } catch (error) {
+            showStatus("Помилка з'єднання із сервером.", true);
+
+        } finally {
+            setButtonsDisabled(false);
+        }
+    }
+
+    document.addEventListener("keydown", function(event) {
+        if (event.key === "Enter") {
+            login();
+        }
+    });
+</script>
+
+</body>
+</html>

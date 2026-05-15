@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Secure Cloud Storage</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: linear-gradient(135deg, #eef2ff, #f8fafc);
+            color: #0f172a;
+        }
+
+        header {
+            background: #1e293b;
+            color: white;
+            padding: 22px 36px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .session {
+            font-size: 12px;
+            color: #cbd5e1;
+            max-width: 420px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        main {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 18px;
+            padding: 24px;
+            margin-bottom: 22px;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+            border: 1px solid #e2e8f0;
+        }
+
+        .panel h2 {
+            margin-top: 0;
+            font-size: 19px;
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        input[type="text"], input[type="file"] {
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 14px;
+            background: #f8fafc;
+        }
+
+        input[type="text"] {
+            min-width: 360px;
+        }
+
+        button {
+            border: none;
+            border-radius: 10px;
+            padding: 10px 15px;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        button.danger {
+            background: #dc2626;
+        }
+
+        button.danger:hover {
+            background: #b91c1c;
+        }
+
+        button.secondary {
+            background: #475569;
+        }
+
+        button.secondary:hover {
+            background: #334155;
+        }
+
+        .hint {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .files {
+            display: grid;
+            gap: 12px;
+        }
+
+        .file-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 16px;
+            border-radius: 14px;
+        }
+
+        .file-name {
+            font-weight: 700;
+            word-break: break-all;
+        }
+
+        .file-meta {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 5px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .status {
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 10px;
+            background: #eff6ff;
+            color: #1e40af;
+            display: none;
+            white-space: pre-wrap;
+        }
+
+        .empty {
+            color: #64748b;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div>
+        <h1>Secure Cloud Storage</h1>
+        <div class="hint">User workspace через захищений FastAPI Gateway</div>
+    </div>
+
+    <div class="session">
+        Session: <span id="session-id"></span>
+    </div>
+	
+	<div style="display:flex; gap:12px; align-items:center;">
+
+		<span
+			id="user-info"
+			style="
+				color:#cbd5e1;
+				font-size:14px;
+				font-weight:600;
+			"
+		></span>
+
+		<a
+			id="admin-link"
+			href="/admin"
+			style="
+				display:none;
+				color:white;
+				text-decoration:none;
+				font-weight:700;
+				background:#dc2626;
+				padding:10px 14px;
+				border-radius:10px;
+			"
+		>
+			Security Dashboard
+		</a>
+
+		<button onclick="logout()">
+			Logout
+		</button>
+
+	</div>
+</header>
+
+<main>
+
+    <section class="panel">
+        <h2>Поточна директорія</h2>
+
+        <div class="row">
+            <input
+                type="text"
+                id="currentPath"
+                value="users/nazar/docs"
+                placeholder="Наприклад: users/nazar/docs"
+            >
+
+            <button class="secondary" onclick="applyManualPath()">Оновити</button>
+        </div>
+
+        <div class="hint">
+            У MinIO папки реалізовані як префікси object key, наприклад:
+            <b>users/nazar/docs/report.pdf</b>
+        </div>
+    </section>
+	
+	<section class="panel">
+		<h2>Створити папку</h2>
+
+		<div class="row">
+			<input
+				type="text"
+				id="folderNameInput"
+				placeholder="Назва нової папки"
+			>
+
+			<button onclick="createFolder()">Create Folder</button>
+		</div>
+
+		<div class="hint">
+			Папка буде створена всередині поточної директорії.
+		</div>
+
+		<div class="status" id="folder-status"></div>
+	</section>
+
+    <section class="panel">
+        <h2>Завантажити файл</h2>
+
+        <div class="row">
+            <input type="file" id="fileInput">
+            <button onclick="uploadFile()">Upload</button>
+        </div>
+
+        <div class="hint">
+            Файл буде завантажено у поточну директорію.
+        </div>
+
+        <div class="status" id="upload-status"></div>
+    </section>
+
+    <section class="panel">
+        <h2>Файли</h2>
+
+        <div id="files-list" class="files"></div>
+    </section>
+
+</main>
+
+<script>
+    let sessionId = sessionStorage.getItem("session_id");
+
+    if (!sessionId) {
+        sessionId = crypto.randomUUID();
+        sessionStorage.setItem("session_id", sessionId);
+    }
+
+    document.getElementById("session-id").innerText = sessionId;
+
+    let currentPath = "";
+    document.getElementById("currentPath").value = currentPath;
+
+    function setPath(path) {
+        currentPath = path.replace(/^\/+|\/+$/g, "");
+        document.getElementById("currentPath").value = currentPath;
+
+        renderBreadcrumbs();
+        loadFiles();
+    }
+
+    function applyManualPath() {
+        setPath(document.getElementById("currentPath").value.trim());
+    }
+
+    function goBackFolder() {
+        if (!currentPath) return;
+
+        const parts = currentPath.split("/");
+        parts.pop();
+
+        setPath(parts.join("/"));
+    }
+
+    function showStatus(elementId, message, isError = false) {
+        const el = document.getElementById(elementId);
+
+        el.style.display = "block";
+        el.style.background = isError ? "#fee2e2" : "#dcfce7";
+        el.style.color = isError ? "#991b1b" : "#166534";
+        el.innerText = message;
+    }
+
+    function renderBreadcrumbs() {
+        let container = document.getElementById("breadcrumbs");
+
+        if (!container) {
+            container = document.createElement("div");
+            container.id = "breadcrumbs";
+            container.style.marginTop = "14px";
+
+            document.querySelector(".panel").appendChild(container);
+        }
+
+        container.innerHTML = "";
+
+        const root = document.createElement("span");
+
+        root.innerText = "Root";
+        root.style.cursor = "pointer";
+        root.style.color = "#2563eb";
+        root.style.fontWeight = "600";
+
+        root.onclick = () => setPath("");
+
+        container.appendChild(root);
+
+        if (!currentPath) return;
+
+        container.appendChild(document.createTextNode(" / "));
+
+        const parts = currentPath.split("/");
+        let accumulated = "";
+
+        parts.forEach((part, index) => {
+            accumulated += (index === 0 ? "" : "/") + part;
+
+            const crumb = document.createElement("span");
+
+            crumb.innerText = part;
+            crumb.style.cursor = "pointer";
+            crumb.style.color = "#2563eb";
+            crumb.style.fontWeight = "600";
+
+            crumb.onclick = () => setPath(accumulated);
+
+            container.appendChild(crumb);
+
+            if (index < parts.length - 1) {
+                container.appendChild(document.createTextNode(" / "));
+            }
+        });
+    }
+
+    async function createFolder() {
+        const input = document.getElementById("folderNameInput");
+
+        const folderName = input.value
+            .trim()
+            .replace(/^\/+|\/+$/g, "");
+
+        if (!folderName) {
+            showStatus("folder-status", "Введіть назву папки.", true);
+            return;
+        }
+
+        const folderPath = currentPath
+            ? `${currentPath}/${folderName}`
+            : folderName;
+
+        const response = await fetch(
+            `/folders?folder_path=${encodeURIComponent(folderPath)}`,
+            {
+                method: "POST",
+                headers: {
+                    "X-Session-ID": sessionId
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showStatus("folder-status", "Папку успішно створено.");
+
+            input.value = "";
+
+            await loadFiles();
+
+        } else {
+            showStatus(
+                "folder-status",
+                data.detail || "Помилка створення папки.",
+                true
+            );
+        }
+    }
+
+    async function deleteFolder(folderPath) {
+        if (!confirm(`Видалити папку разом з усіма файлами?\n${folderPath}`)) {
+            return;
+        }
+
+        const response = await fetch(
+            `/folders/${encodeURIComponent(folderPath)}`,
+            {
+                method: "DELETE",
+                headers: {
+                    "X-Session-ID": sessionId
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showStatus(
+                "folder-status",
+                `Папку видалено. Видалено об'єктів: ${data.deleted_objects}.`
+            );
+
+            await loadFiles();
+
+        } else {
+            showStatus(
+                "folder-status",
+                data.detail || "Помилка видалення папки.",
+                true
+            );
+        }
+    }
+
+    async function uploadFile() {
+        const fileInput = document.getElementById("fileInput");
+
+        if (!fileInput.files.length) {
+            showStatus("upload-status", "Оберіть файл.", true);
+            return;
+        }
+
+        const originalFile = fileInput.files[0];
+
+        const objectName = currentPath
+            ? `${currentPath}/${originalFile.name}`
+            : originalFile.name;
+
+        const renamedFile = new File(
+            [originalFile],
+            objectName,
+            { type: originalFile.type }
+        );
+
+        const formData = new FormData();
+        formData.append("file", renamedFile);
+
+        const response = await fetch("/upload", {
+            method: "POST",
+            headers: {
+                "X-Session-ID": sessionId
+            },
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showStatus("upload-status", "Файл успішно завантажено.");
+
+            fileInput.value = "";
+
+            await loadFiles();
+
+        } else {
+            showStatus(
+                "upload-status",
+                data.detail || "Помилка завантаження файлу.",
+                true
+            );
+        }
+    }
+
+    async function loadFiles() {
+        const response = await fetch("/files", {
+            headers: {
+                "X-Session-ID": sessionId
+            }
+        });
+
+        if (response.status === 401 || response.status === 403) {
+            window.location.href = "/login";
+            return;
+        }
+
+        const data = await response.json();
+
+        const list = document.getElementById("files-list");
+
+        list.innerHTML = "";
+
+        const allFiles = data.files || [];
+
+        const folders = new Set();
+        const visibleFiles = [];
+
+        allFiles.forEach(file => {
+            const filename = file.filename || file.object_name || "";
+
+            if (filename.endsWith("/.keep")) {
+                const folderPath = filename.replace("/.keep", "");
+
+                if (currentPath && !folderPath.startsWith(currentPath + "/")) {
+                    return;
+                }
+
+                const relativeFolderPath = currentPath
+                    ? folderPath.slice(currentPath.length + 1)
+                    : folderPath;
+
+                if (
+                    relativeFolderPath &&
+                    !relativeFolderPath.includes("/")
+                ) {
+                    folders.add(relativeFolderPath);
+                }
+
+                return;
+            }
+
+            if (
+                currentPath &&
+                !filename.startsWith(currentPath + "/")
+            ) {
+                return;
+            }
+
+            const relativePath = currentPath
+                ? filename.slice(currentPath.length + 1)
+                : filename;
+
+            if (!relativePath) return;
+
+            if (relativePath.includes("/")) {
+                folders.add(relativePath.split("/")[0]);
+            } else {
+                visibleFiles.push(file);
+            }
+        });
+
+        if (!folders.size && !visibleFiles.length) {
+            list.innerHTML = `
+                <div class="empty">
+                    У цій директорії поки немає файлів.
+                </div>
+            `;
+            return;
+        }
+
+        if (currentPath) {
+            const backCard = document.createElement("div");
+
+            backCard.className = "file-card";
+            backCard.style.cursor = "pointer";
+
+            backCard.innerHTML = `
+                <div>
+                    <div class="file-name">⬅ Назад</div>
+                </div>
+            `;
+
+            backCard.onclick = goBackFolder;
+
+            list.appendChild(backCard);
+        }
+
+        folders.forEach(folder => {
+            const folderPath = currentPath
+                ? `${currentPath}/${folder}`
+                : folder;
+
+            const folderCard = document.createElement("div");
+
+            folderCard.className = "file-card";
+
+            folderCard.innerHTML = `
+                <div style="cursor:pointer;" onclick="setPath('${folderPath}')">
+                    <div class="file-name">📁 ${folder}</div>
+                    <div class="file-meta">${folderPath}</div>
+                </div>
+
+                <div class="actions">
+                    <button class="danger" onclick="deleteFolder('${folderPath}')">
+                        Delete Folder
+                    </button>
+                </div>
+            `;
+
+            list.appendChild(folderCard);
+        });
+
+        visibleFiles.forEach(file => {
+            const filename = file.filename || file.object_name;
+            const size = file.size ?? 0;
+            const lastModified = file.last_modified || "";
+
+            const card = document.createElement("div");
+
+            card.className = "file-card";
+
+            card.innerHTML = `
+                <div>
+                    <div class="file-name">
+                        📄 ${filename.split("/").pop()}
+                    </div>
+
+                    <div class="file-meta">
+                        ${filename}<br>
+                        Size: ${size} bytes<br>
+                        Modified: ${lastModified}
+                    </div>
+                </div>
+            `;
+
+            const actions = document.createElement("div");
+
+            actions.className = "actions";
+
+            const downloadButton = document.createElement("button");
+
+            downloadButton.innerText = "Download";
+
+            downloadButton.onclick = () =>
+                downloadFile(encodeURIComponent(filename));
+
+            const deleteButton = document.createElement("button");
+
+            deleteButton.innerText = "Delete";
+            deleteButton.className = "danger";
+
+            deleteButton.onclick = () =>
+                deleteFile(encodeURIComponent(filename));
+
+            actions.appendChild(downloadButton);
+            actions.appendChild(deleteButton);
+
+            card.appendChild(actions);
+
+            list.appendChild(card);
+        });
+    }
+
+    async function downloadFile(encodedFilename) {
+        const response = await fetch(`/download/${encodedFilename}`, {
+            headers: {
+                "X-Session-ID": sessionId
+            }
+        });
+
+        if (!response.ok) {
+            let data = {};
+
+            try {
+                data = await response.json();
+            } catch (e) {}
+
+            showStatus(
+                "upload-status",
+                data.detail || "Помилка завантаження файлу.",
+                true
+            );
+
+            return;
+        }
+
+        const blob = await response.blob();
+
+        const filename = decodeURIComponent(encodedFilename)
+            .split("/")
+            .pop();
+
+        const url = window.URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+
+        a.href = url;
+        a.download = filename;
+
+        document.body.appendChild(a);
+
+        a.click();
+
+        a.remove();
+
+        window.URL.revokeObjectURL(url);
+    }
+
+    async function loadCurrentUser() {
+        const response = await fetch("/me");
+
+        if (!response.ok) {
+            window.location.href = "/login";
+            return;
+        }
+
+        const user = await response.json();
+
+        const userInfo = document.getElementById("user-info");
+
+        if (userInfo) {
+            userInfo.innerText = `${user.username} (${user.role})`;
+        }
+
+        const adminLink = document.getElementById("admin-link");
+
+        if (adminLink && user.role === "admin") {
+            adminLink.style.display = "inline-block";
+        }
+    }
+
+    async function logout() {
+        await fetch("/logout", {
+            method: "POST"
+        });
+
+        sessionStorage.removeItem("session_id");
+        localStorage.removeItem("session_id");
+
+        window.location.href = "/login";
+    }
+
+    async function deleteFile(encodedFilename) {
+        const filename = decodeURIComponent(encodedFilename);
+
+        if (!confirm(`Видалити файл?\n${filename}`)) {
+            return;
+        }
+
+        const response = await fetch(`/delete/${encodedFilename}`, {
+            method: "DELETE",
+            headers: {
+                "X-Session-ID": sessionId
+            }
+        });
+
+        let data = {};
+
+        try {
+            data = await response.json();
+        } catch (e) {}
+
+        if (response.ok) {
+            showStatus(
+                "upload-status",
+                "Файл успішно видалено."
+            );
+
+            await loadFiles();
+
+        } else {
+            showStatus(
+                "upload-status",
+                data.detail || "Помилка видалення файлу.",
+                true
+            );
+        }
+    }
+
+    loadCurrentUser();
+    renderBreadcrumbs();
+    loadFiles();
+</script>
+
+</body>
+</html>

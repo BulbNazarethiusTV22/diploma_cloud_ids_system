@@ -1,0 +1,7 @@
+timestamp,session_id,ip,prediction,probability,risk_level,action_taken
+2026-05-12T23:54:28,e706d682-da7e-4903-878c-f883fdbe6f1f,192.168.1.10,Benign,0.8552842722919326,LOW,allow
+2026-05-13T00:14:58,feature-sim-0c08e4d1-03da-4bb7-9247-17bed7001fee,127.0.0.1,Benign,0.5303930634183313,MEDIUM,ml_anomaly_alert
+2026-05-13T11:18:19,b939e649-a24c-4852-abf5-f9efa783df5e,192.168.1.242,Benign,0.6242861469657729,LOW,monitor_session
+2026-05-13T11:19:20,feature-sim-4a6dfd3f-c9a2-4ee9-80a6-6db6418b4b6c,127.0.0.1,Benign,0.4844691635731519,MEDIUM,ml_anomaly_alert
+2026-05-13T11:33:49,c0274007-2208-4142-8f5e-59aa10ed3d63,127.0.0.1,Benign,0.6487466605142072,LOW,monitor_session
+2026-05-13T14:01:10,14582119-3410-4ec0-9f09-529210b0416c,127.0.0.1,Benign,0.6487466605142069,LOW,monitor_session

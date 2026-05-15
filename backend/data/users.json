@@ -1,0 +1,20 @@
+[
+    {
+        "username": "admin",
+        "password": "admin123",
+        "role": "admin",
+        "demo_ip": "127.0.0.1"
+    },
+    {
+        "username": "nazar",
+        "password": "1234",
+        "role": "user",
+        "demo_ip": "192.168.1.10"
+    },
+    {
+        "username": "max",
+        "password": "max12345",
+        "role": "user",
+        "demo_ip": "192.168.1.242"
+    }
+]

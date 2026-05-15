@@ -1,0 +1,5 @@
+MINIO_ENDPOINT = "localhost:9000"
+MINIO_ACCESS_KEY = "admin"
+MINIO_SECRET_KEY = "admin12345"
+MINIO_BUCKET = "cloud-files"
+MINIO_SECURE = False
