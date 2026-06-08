@@ -186,7 +186,7 @@ Bulbotko_NV/
 Download the archive with trained ML models:
 
 **Google Drive archive:**
-https://drive.google.com/file/d/1P7vZFyX_CsZbcX3bd92RqtcaiGr95Tlt/view?usp=sharing
+https://drive.google.com/drive/folders/1MONCU1YALG-s8ImEiNDP0Uaj1PDZajuz?usp=sharing
 
 ### Step 3 — Extract files
 
